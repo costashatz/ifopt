@@ -32,6 +32,10 @@ target_compile_definitions(${LIB_IPOPT}
     ${IPOPT_DEFINITIONS}
 )
 
+if(NOT BUILD_SHARED_LIBS)
+  set_property(TARGET ${LIB_IPOPT} PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
+
 
 #############
 ## Testing ##

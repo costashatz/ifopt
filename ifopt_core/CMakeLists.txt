@@ -24,6 +24,10 @@ target_compile_features(${LIB_CORE}
     cxx_auto_type
 )
 
+if(NOT BUILD_SHARED_LIBS)
+  set_property(TARGET ${LIB_CORE} PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
+
 #############
 ## Install ##
 #############

@@ -30,6 +30,10 @@ if(${SNOPT_v76})
   )
 endif()
 
+if(NOT BUILD_SHARED_LIBS)
+  set_property(TARGET ${LIB_SNOPT} PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
+
 
 #############
 ## Testing ##
