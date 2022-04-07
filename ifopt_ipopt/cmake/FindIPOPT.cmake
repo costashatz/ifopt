@@ -41,20 +41,60 @@
 #  License text for the above reference.)
 
 if(NOT WIN32)
+  # On non Windows systems we use PkgConfig to find IPOPT
+  find_package(PkgConfig QUIET)
+  if(PKG_CONFIG_FOUND)
 
-  # First priority is finding the package using IPOPT_DIR if set
-  if(DEFINED ENV{IPOPT_DIR})
-    set(IPOPT_DIR $ENV{IPOPT_DIR} CACHE PATH "Path to IPOPT build directory")
+    if(IPOPT_FIND_VERSION)
+      if(IPOPT_FIND_VERSION_EXACT)
+        pkg_check_modules(_PC_IPOPT QUIET ipopt=${IPOPT_FIND_VERSION})
+      else()
+        pkg_check_modules(_PC_IPOPT QUIET ipopt>=${IPOPT_FIND_VERSION})
+      endif()
+    else()
+      pkg_check_modules(_PC_IPOPT QUIET ipopt)
+    endif()
 
-    set(IPOPT_INCLUDE_DIRS ${IPOPT_DIR}/include/coin)
+
+    if(_PC_IPOPT_FOUND)
+      set(IPOPT_INCLUDE_DIRS ${_PC_IPOPT_INCLUDE_DIRS} CACHE PATH "IPOPT include directory")
+      set(IPOPT_DEFINITIONS ${_PC_IPOPT_CFLAGS_OTHER} CACHE STRING "Additional compiler flags for IPOPT")
+      set(IPOPT_LIBRARIES "" CACHE STRING "IPOPT libraries" FORCE)
+      foreach(_LIBRARY IN ITEMS ${_PC_IPOPT_LIBRARIES})
+        find_library(${_LIBRARY}_PATH
+                     NAMES ${_LIBRARY}
+                     PATHS ${_PC_IPOPT_LIBRARY_DIRS})
+        # Workaround for https://github.com/robotology/icub-main/issues/418
+        if(${_LIBRARY}_PATH)
+          list(APPEND IPOPT_LIBRARIES ${${_LIBRARY}_PATH})
+        endif()
+      endforeach()
+    else()
+      set(IPOPT_DEFINITIONS "")
+    endif()
+
+  endif()
+
+  set(IPOPT_LINK_FLAGS "")
+
+  # If pkg-config fails, try to find the package using IPOPT_DIR
+  if(NOT _PC_IPOPT_FOUND)
+    set(IPOPT_DIR_TEST $ENV{IPOPT_DIR})
+    if(IPOPT_DIR_TEST)
+      set(IPOPT_DIR $ENV{IPOPT_DIR} CACHE PATH "Path to IPOPT build directory")
+    else()
+      set(IPOPT_DIR /usr            CACHE PATH "Path to IPOPT build directory")
+    endif()
+
+    find_path(IPOPT_INCLUDE_DIRS NAMES IpIpoptApplication.hpp PATH_SUFFIXES coin coin-or PATHS ${IPOPT_DIR}/include/coin)
+
     find_library(IPOPT_LIBRARIES ipopt ${IPOPT_DIR}/lib
                                      ${IPOPT_DIR}/lib/coin
-                                     NO_DEFAULT_PATH)
+                                     ${IPOPT_DIR}/lib/coin-or)
 
     if(IPOPT_LIBRARIES)
       find_file(IPOPT_DEP_FILE ipopt_addlibs_cpp.txt ${IPOPT_DIR}/share/doc/coin/Ipopt
-                                                     ${IPOPT_DIR}/share/coin/doc/Ipopt
-                                                     NO_DEFAULT_PATH)
+                                                     ${IPOPT_DIR}/share/coin/doc/Ipopt)
       mark_as_advanced(IPOPT_DEP_FILE)
 
       if(IPOPT_DEP_FILE)
@@ -63,15 +103,16 @@ if(NOT WIN32)
         string(REGEX REPLACE "-[^l][^ ]* " "" IPOPT_DEP ${IPOPT_DEP})
         string(REPLACE "-l"                "" IPOPT_DEP ${IPOPT_DEP})
         string(REPLACE "\n"                "" IPOPT_DEP ${IPOPT_DEP})
-        string(REPLACE "ipopt"             "" IPOPT_DEP ${IPOPT_DEP})  # remove any possible auto-dependency
+        string(REPLACE "ipopt"             "" IPOPT_DEP ${IPOPT_DEP})       # remove any possible auto-dependency
         separate_arguments(IPOPT_DEP)
 
         # use the find_library command in order to prepare rpath correctly
         foreach(LIB ${IPOPT_DEP})
           find_library(IPOPT_SEARCH_FOR_${LIB} ${LIB} ${IPOPT_DIR}/lib
                                                       ${IPOPT_DIR}/lib/coin
+                                                      ${IPOPT_DIR}/lib/coin-or
                                                       ${IPOPT_DIR}/lib/coin/ThirdParty
-                                                      NO_DEFAULT_PATH)
+                                                      ${IPOPT_DIR}/lib/coin-or/ThirdParty)
           if(IPOPT_SEARCH_FOR_${LIB})
             # handle non-system libraries (e.g. coinblas)
             set(IPOPT_LIBRARIES ${IPOPT_LIBRARIES} ${IPOPT_SEARCH_FOR_${LIB}})
@@ -85,44 +126,8 @@ if(NOT WIN32)
     endif()
 
     set(IPOPT_DEFINITIONS "")
-
-  
-  # if IPOPT_DIR not set, try finding IPOPT through package manager  
-  else()
-    find_package(PkgConfig QUIET)
-    if(PKG_CONFIG_FOUND)
-    
-      if(IPOPT_FIND_VERSION)
-        if(IPOPT_FIND_VERSION_EXACT)
-          pkg_check_modules(_PC_IPOPT REQUIRED ipopt=${IPOPT_FIND_VERSION})
-        else()
-          pkg_check_modules(_PC_IPOPT REQUIRED ipopt>=${IPOPT_FIND_VERSION})
-        endif()
-      else()
-        pkg_check_modules(_PC_IPOPT REQUIRED ipopt)
-      endif()
-    
-    
-      if(_PC_IPOPT_FOUND)
-        set(IPOPT_INCLUDE_DIRS ${_PC_IPOPT_INCLUDE_DIRS} CACHE PATH "IPOPT include directory")
-        set(IPOPT_DEFINITIONS ${_PC_IPOPT_CFLAGS_OTHER} CACHE STRING "Additional compiler flags for IPOPT")
-        set(IPOPT_LIBRARIES "" CACHE STRING "IPOPT libraries" FORCE)
-        foreach(_LIBRARY IN ITEMS ${_PC_IPOPT_LIBRARIES})
-          find_library(${_LIBRARY}_PATH
-                       NAMES ${_LIBRARY}
-                       PATHS ${_PC_IPOPT_LIBRARY_DIRS})
-          # Workaround for https://github.com/robotology/icub-main/issues/418
-          if(${_LIBRARY}_PATH)
-            list(APPEND IPOPT_LIBRARIES ${${_LIBRARY}_PATH})
-          endif()
-        endforeach()
-      else()
-        set(IPOPT_DEFINITIONS "")
-      endif()
-    endif()
+    set(IPOPT_LINK_FLAGS "")
   endif()
-  
-  set(IPOPT_LINK_FLAGS "")
 
 # Windows platforms
 else()
@@ -130,13 +135,13 @@ else()
 
   set(IPOPT_DIR $ENV{IPOPT_DIR} CACHE PATH "Path to IPOPT build directory")
 
-  set(IPOPT_INCLUDE_DIRS ${IPOPT_DIR}/include/coin)
-  find_library(IPOPT_IPOPT_LIBRARY_RELEASE libipopt ${IPOPT_DIR}/lib
-                                                    ${IPOPT_DIR}/lib/coin
-                                                    NO_DEFAULT_PATH)
-  find_library(IPOPT_IPOPT_LIBRARY_DEBUG   libipoptD ${IPOPT_DIR}/lib
-                                                     ${IPOPT_DIR}/lib/coin
-                                                     NO_DEFAULT_PATH)
+  find_path(IPOPT_INCLUDE_DIRS NAMES IpIpoptApplication.hpp PATH_SUFFIXES coin coin-or PATHS ${IPOPT_DIR}/include/coin)
+
+  # See https://github.com/coin-or/Ipopt/blob/releases/3.13.3/src/Interfaces/Ipopt.java#L167 for a possible library names
+  find_library(IPOPT_IPOPT_LIBRARY_RELEASE NAMES libipopt ipopt ipopt-3 ipopt-0 libipopt-3 libipopt-0 ipopt.dll
+                                           PATHS ${IPOPT_DIR}/lib ${IPOPT_DIR}/lib/coin)
+  find_library(IPOPT_IPOPT_LIBRARY_DEBUG NAMES libipoptD ipoptD ipoptD-3 ipoptD-0 libipoptD-3 libipoptD-0 ipoptD.dll
+                                         PATHS ${IPOPT_DIR}/lib ${IPOPT_DIR}/lib/coin)
 
   select_library_configurations(IPOPT_IPOPT)
   set(IPOPT_LIBRARIES ${IPOPT_IPOPT_LIBRARY})
@@ -210,14 +215,18 @@ else()
         find_library(IPOPT_${_LIB}_LIBRARY_RELEASE ${_lib} ${_IPOPT_IPOPT_LIBRARY_DIR})
         find_library(IPOPT_${_LIB}_LIBRARY_DEBUG ${_lib}d ${_IPOPT_IPOPT_LIBRARY_DIR})
         select_library_configurations(IPOPT_${_LIB})
-        list(APPEND IPOPT_LIBRARIES ${IPOPT_${_LIB}_LIBRARY})
+        if(NOT "${IPOPT_${_LIB}_LIBRARY}" MATCHES "NOTFOUND$")
+          list(APPEND IPOPT_LIBRARIES ${IPOPT_${_LIB}_LIBRARY})
+        endif()
       endforeach()
     endif()
   endif()
 
   set(IPOPT_DEFINITIONS "")
   if(MSVC)
-    set(IPOPT_LINK_FLAGS "/NODEFAULTLIB:libcmt.lib;libcmtd.lib")
+    # Not sure about removing this!
+    # set(IPOPT_LINK_FLAGS "/NODEFAULTLIB:libcmt.lib;libcmtd.lib")
+    set(IPOPT_LINK_FLAGS "")
   else()
     set(IPOPT_LINK_FLAGS "")
   endif()
