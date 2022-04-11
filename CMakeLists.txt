@@ -32,6 +32,11 @@ if (BUILD_IPOPT)
   add_subdirectory(ifopt_ipopt)
 endif()
 
+option(BUILD_NLOPT "compile with NLopt solver" ON)
+if (BUILD_NLOPT)
+  add_subdirectory(ifopt_nlopt)
+endif()
+
 option(BUILD_SNOPT "compile with SNOPT solver" OFF)
 if (BUILD_SNOPT)
   add_subdirectory(ifopt_snopt)

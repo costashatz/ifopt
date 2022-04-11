@@ -39,6 +39,7 @@
 # these are autogenerate by cmake
 include("${CMAKE_CURRENT_LIST_DIR}/ifopt_core-targets.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/ifopt_ipopt-targets.cmake" OPTIONAL)
+include("${CMAKE_CURRENT_LIST_DIR}/ifopt_nlopt-targets.cmake" OPTIONAL)
 include("${CMAKE_CURRENT_LIST_DIR}/ifopt_snopt-targets.cmake" OPTIONAL)
 
 get_target_property(ifopt_INCLUDE_DIRS ifopt::ifopt_core INTERFACE_INCLUDE_DIRECTORIES)
@@ -51,6 +52,12 @@ list(APPEND ifopt_LIBRARIES ${ifopt_LIB_CORE})
 if(TARGET ifopt::ifopt_ipopt)
   get_property(ifopt_LIB_IPOPT TARGET ifopt::ifopt_ipopt PROPERTY LOCATION)
   list(APPEND ifopt_LIBRARIES ${ifopt_LIB_IPOPT})
+endif()
+
+# ifopt_nlopt
+if(TARGET ifopt::ifopt_nlopt)
+  get_property(ifopt_LIB_NLOPT TARGET ifopt::ifopt_nlopt PROPERTY LOCATION)
+  list(APPEND ifopt_LIBRARIES ${ifopt_LIB_NLOPT})
 endif()
 
 # ifopt_snopt
