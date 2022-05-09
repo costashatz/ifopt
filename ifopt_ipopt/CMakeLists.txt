@@ -32,6 +32,10 @@ target_compile_definitions(${LIB_IPOPT}
     ${IPOPT_DEFINITIONS}
 )
 
+if(IFOPT_EXTERNAL_LIBPATH)
+  target_link_directories(${LIB_IPOPT} PUBLIC ${IFOPT_EXTERNAL_LIBPATH})
+endif()
+
 
 #############
 ## Testing ##

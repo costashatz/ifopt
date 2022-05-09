@@ -23,6 +23,21 @@ if(NOT DEFINED BUILD_SHARED_LIBS)
   set(BUILD_SHARED_LIBS ON)
 endif()
 
+#
+# MSVC
+#
+if(MSVC AND NOT BUILD_SHARED_LIBS)
+    # Ensure static linking to avoid:
+    #   error LNK2038: mismatch detected for 'RuntimeLibrary':
+    #   value 'MT_StaticRelease' doesn't match value 'MD_DynamicRelease'
+    string(REPLACE "MD" "MT" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+    string(REPLACE "MDd" "MTd" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    if (${CMAKE_C_FLAGS_RELEASE})
+      string(REPLACE "MD" "MT" CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+      string(REPLACE "MDd" "MTd" CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    endif()
+endif()
+
 enable_testing()
 set(LIB_CORE ifopt_core)
 add_subdirectory(ifopt_core)
