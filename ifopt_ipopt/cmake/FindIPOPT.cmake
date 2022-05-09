@@ -62,17 +62,19 @@ if(PKG_CONFIG_FOUND)
     set(IPOPT_PC_LIBS "")
     set(IPOPT_INCLUDE_DIRS "")
     foreach(_PATH IN ITEMS ${IPOPT_INCLUDE_DIRS_OLD})
-      if((NOT WIN32) OR ${_PATH} MATCHES "C:/msys64/*")
+      # Pure linux or pure Windows path
+      if((NOT WIN32) OR ${_PATH} MATCHES "C:*")
         list(APPEND IPOPT_INCLUDE_DIRS ${_PATH})
-      else()
+      else() # msys build
         list(APPEND IPOPT_INCLUDE_DIRS "C:/msys64${_PATH}")
       endif()
     endforeach()
     # MESSAGE("INCLUDE: ${IPOPT_INCLUDE_DIRS}")
     foreach(_PATH IN ITEMS ${_PC_IPOPT_LIBRARY_DIRS})
-      if((NOT WIN32) OR ${_PATH} MATCHES "C:/msys64/*")
+      # Pure linux or pure Windows path
+      if((NOT WIN32) OR ${_PATH} MATCHES "C:*")
         list(APPEND IPOPT_PC_LIBS ${_PATH})
-      else()
+      else() # msys build
         list(APPEND IPOPT_PC_LIBS "C:/msys64${_PATH}")
       endif()
     endforeach()
